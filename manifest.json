@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "X Country Filter",
+  "version": "0.1.0",
+  "description": "Hide posts on X (For You timeline) from accounts based in selected countries. 100% local — no data leaves the browser.",
+  "permissions": ["storage"],
+  "host_permissions": ["*://x.com/*", "*://twitter.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://x.com/*", "*://twitter.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "action": {
+    "default_title": "X Country Filter",
+    "default_popup": ""
+  }
+}
