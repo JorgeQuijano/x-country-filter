@@ -42,6 +42,63 @@ function logDebug(entry) {
 }
 
 // ---------- fetching ----------
+// Primary: authenticated GraphQL UserByScreenName — carries the real
+// "Account based in" country (forced by X, not user-editable) when X has
+// derived one, plus the free-text legacy.location.
+// The ct0 cookie is the CSRF token the web app sends with API calls.
+async function getCt0() {
+  const cookie = await chrome.cookies.get({ url: "https://x.com", name: "ct0" });
+  return cookie ? cookie.value : null;
+}
+
+async function fetchProfileApi(screenName) {
+  const ct0 = await getCt0();
+  if (!ct0) throw new Error("no ct0 cookie — not logged in to x.com?");
+  const url = `https://x.com/i/api/graphql/IV5EXjVpHWFh0S4wFQa7vQ/UserByScreenName?variables=${encodeURIComponent(
+    JSON.stringify({
+      screen_name: screenName,
+      withSafetyModeUserFields: true,
+    })
+  )}`;
+  const res = await fetch(url, {
+    credentials: "include",
+    headers: {
+      "x-csrf-token": ct0,
+      "x-twitter-auth-type": "OAuth2",
+      "x-twitter-active-user": "yes",
+      "content-type": "application/json",
+    },
+  });
+  if (!res.ok) throw new Error(`API HTTP ${res.status} for ${screenName}`);
+  const json = await res.json();
+  return json;
+}
+
+// Extract what we need from the GraphQL user result.
+function parseUserResult(result) {
+  const found = {};
+  const legacy = result && (result.legacy || (result.user && result.user.legacy));
+  if (legacy) {
+    if (legacy.location) found.location = legacy.location;
+    if (legacy.followers_count !== undefined) found.followers_count = legacy.followers_count;
+  }
+  // "Account based in" — X-derived, appears on profiles as country; exact
+  // field name varies by client. Probe multiple known shapes (top-level
+  // and inside legacy).
+  for (const key of ["country_code", "based_in", "country", "account_based_in"]) {
+    const v = result ? result[key] : undefined;
+    if (v !== undefined && v !== null) {
+      found[key] = v;
+    }
+    const lv = legacy ? legacy[key] : undefined;
+    if (lv !== undefined && lv !== null) {
+      found[key] = lv;
+    }
+  }
+  found.probed_keys = result ? Object.keys(result).join(",") : "";
+  return found;
+}
+
 async function fetchProfilePage(screenName) {
   const url = `https://x.com/${encodeURIComponent(screenName)}`;
   const res = await fetch(url, {
@@ -91,23 +148,34 @@ async function lookup(screenName) {
     return { screen: screenName, code: cached.code, method: cached.method, cached: true };
   }
 
-  let html;
+  let found = {};
+  let via = "api";
   try {
-    html = await fetchProfilePage(screenName);
+    // Primary: authenticated GraphQL API (has the real country data)
+    const api = await fetchProfileApi(screenName);
+    const result = api && api.data && api.data.user && api.data.user.result;
+    found = parseUserResult(result);
   } catch (e) {
-    logDebug({ screen: screenName, code: null, method: "error", raw: String(e), ts: now });
-    await persist();
-    return { screen: screenName, code: null, method: "error", error: String(e) };
+    // Fallback: profile page HTML embedded JSON
+    via = "html";
+    try {
+      const html = await fetchProfilePage(screenName);
+      found = extractFromHtml(html, screenName);
+    } catch (e2) {
+      logDebug({ screen: screenName, code: null, method: "error", raw: `${e}; ${e2}`, ts: now });
+      await persist();
+      return { screen: screenName, code: null, method: "error", error: String(e2) };
+    }
   }
 
-  const found = extractFromHtml(html, screenName);
   const detected = detectCountry(found);
 
   const result = {
     screen: screenName,
     code: detected ? detected.code : null,
-    method: detected ? detected.method : "none",
-    raw: (found.raw_text || "").slice(0, 120),
+    method: detected ? `${via}:${detected.method}` : `${via}:none`,
+    raw: (found.raw_text || found.location || "").slice(0, 120),
+    probed_keys: (found.probed_keys || "").slice(0, 200),
     ts: now,
   };
 

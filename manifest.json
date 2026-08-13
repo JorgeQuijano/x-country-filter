@@ -3,7 +3,7 @@
   "name": "X Country Filter",
   "version": "0.1.0",
   "description": "Hide posts on X (For You timeline) from accounts based in selected countries. 100% local — no data leaves the browser.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "cookies"],
   "host_permissions": ["*://x.com/*", "*://twitter.com/*"],
   "background": {
     "service_worker": "background.js"
