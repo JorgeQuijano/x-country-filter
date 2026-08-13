@@ -3,7 +3,12 @@
 # Usage: bash <(curl -sL https://cdn.jsdelivr.net/gh/JorgeQuijano/x-country-filter@main/install.sh)
 set -euo pipefail
 
-DEST="${XDG_DATA_HOME:-$HOME/.local/share}/x-country-filter"
+# macOS: visible folder in Finder. Linux/WSL: XDG data dir.
+if [[ "$(uname)" == "Darwin" ]]; then
+  DEST="$HOME/x-country-filter"
+else
+  DEST="${XDG_DATA_HOME:-$HOME/.local/share}/x-country-filter"
+fi
 ZIP_URL="https://github.com/JorgeQuijano/x-country-filter/archive/refs/heads/main.zip"
 
 echo "==> downloading extension..."

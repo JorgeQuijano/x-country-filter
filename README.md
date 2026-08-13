@@ -12,7 +12,7 @@ bash <(curl -sL https://cdn.jsdelivr.net/gh/JorgeQuijano/x-country-filter@main/i
 Then in the browser:
 1. open `brave://extensions` (or `chrome://extensions`)
 2. toggle **developer mode** (top right)
-3. click **load unpacked** → select `~/.local/share/x-country-filter`
+3. click **load unpacked** → select `~/x-country-filter` (macOS) or `~/.local/share/x-country-filter` (Linux)
 
 Done. Pin the icon to open options (add country codes, export debug data).
 
