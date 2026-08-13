@@ -11,7 +11,11 @@ mkdir -p "$DEST"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
 curl -sL "$ZIP_URL" -o "$TMP/xcf.zip"
-unzip -oq "$TMP/xcf.zip" -d "$TMP"
+if command -v unzip >/dev/null 2>&1; then
+  unzip -oq "$TMP/xcf.zip" -d "$TMP"
+else
+  python3 -m zipfile -e "$TMP/xcf.zip" "$TMP"
+fi
 cp -r "$TMP"/x-country-filter-main/* "$DEST/"
 
 echo ""
