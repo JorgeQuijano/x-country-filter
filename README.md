@@ -6,7 +6,7 @@ Runs 100% locally in your browser — no credentials, no servers, no data leaves
 ## Install — one command (Brave / Chrome on Linux, macOS, WSL)
 
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/JorgeQuijano/x-country-filter/main/install.sh)
+bash <(curl -sL https://cdn.jsdelivr.net/gh/JorgeQuijano/x-country-filter@main/install.sh)
 ```
 
 Then in the browser:

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # X Country Filter — one-command install for Brave/Chrome (Linux/macOS/WSL)
-# Usage: bash <(curl -sL https://raw.githubusercontent.com/JorgeQuijano/x-country-filter/main/install.sh)
+# Usage: bash <(curl -sL https://cdn.jsdelivr.net/gh/JorgeQuijano/x-country-filter@main/install.sh)
 set -euo pipefail
 
 DEST="${XDG_DATA_HOME:-$HOME/.local/share}/x-country-filter"
