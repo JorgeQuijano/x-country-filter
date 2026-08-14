@@ -63,6 +63,24 @@ $("clearCache").addEventListener("click", async () => {
   setStatus("cache cleared");
 });
 
+$("testBtn").addEventListener("click", async () => {
+  const handle = $("testHandle").value.trim();
+  if (!handle) { setStatus("enter a handle"); return; }
+  const el = $("testResult");
+  el.textContent = "checking @" + handle + "...";
+  const resp = await chrome.runtime.sendMessage({ type: "test_lookup", screen_name: handle });
+  if (!resp) { el.textContent = "no response (background worker may need a reload)"; return; }
+  if (resp.error) { el.textContent = "error: " + resp.error; return; }
+  const lines = [
+    "@" + handle,
+    "country: " + (resp.code || "(none detected)"),
+    "method:  " + (resp.method || "?") + (resp.cached ? " (cached)" : ""),
+  ];
+  if (resp.raw) lines.push("raw:     " + resp.raw);
+  if (resp.probed_keys) lines.push("keys:    " + resp.probed_keys);
+  el.textContent = lines.join("\n");
+});
+
 $("exportDebug").addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "get_debug" }, (resp) => {
     if (!resp) { setStatus("no debug data yet — browse your timeline first"); return; }

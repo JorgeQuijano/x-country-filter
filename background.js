@@ -140,11 +140,11 @@ function extractFromHtml(html, screenName) {
 }
 
 // ---------- detection pipeline ----------
-async function lookup(screenName) {
+async function lookup(screenName, forceFresh) {
   const now = Date.now();
   // cache hit?
   const cached = cache[screenName.toLowerCase()];
-  if (cached && now - cached.ts < CACHE_TTL_MS) {
+  if (!forceFresh && cached && now - cached.ts < CACHE_TTL_MS) {
     return { screen: screenName, code: cached.code, method: cached.method, cached: true };
   }
 
@@ -228,6 +228,16 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     void chrome.action.setBadgeText({ text });
     void chrome.action.setBadgeBackgroundColor({ color: "#1d9bf0" });
     return;
+  }
+
+  if (msg.type === "test_lookup") {
+    const key = (msg.screen_name || "").toLowerCase().trim();
+    if (!key) { sendResponse({ error: "empty screen name" }); return; }
+    void (async () => {
+      const result = await lookup(key, true); // force fresh
+      sendResponse(result);
+    })();
+    return true; // async
   }
 
   if (msg.type === "get_debug") {
