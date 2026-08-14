@@ -33,10 +33,19 @@ function unhideArticle(article) {
 }
 
 async function shouldHide(code) {
-  const opts = await chrome.storage.sync.get(["enabled", "countries", "hideFollowing"]);
+  const opts = await chrome.storage.sync.get(["enabled", "countries", "regions", "hideFollowing"]);
   if (opts.enabled === false) return false;
   const countries = opts.countries && opts.countries.length ? opts.countries : ["IN"];
-  return countries.includes(code);
+  const regions = opts.regions && opts.regions.length ? opts.regions : [];
+  if (countries.includes(code)) return true;
+  // region token matches directly (e.g. code === "SOUTH_ASIA")
+  if (regions.includes(code)) return true;
+  // if the detected code is a country inside a banned region, hide it
+  for (const r of regions) {
+    const members = REGION_MEMBERS[r];
+    if (members && members.includes(code)) return true;
+  }
+  return false;
 }
 
 // Process a single article
@@ -103,8 +112,8 @@ chrome.storage.onChanged.addListener((changes, area) => {
   if (changes.enabled && changes.enabled.newValue === false) {
     document.querySelectorAll(`article[data-xcf-hidden]`).forEach(unhideArticle);
   }
-  if (changes.countries) {
-    // countries changed: rescan everything (re-hide per new list)
+  if (changes.countries || changes.regions) {
+    // countries/regions changed: rescan everything (re-hide per new list)
     document.querySelectorAll('article[data-testid="tweet"]').forEach((a) => {
       a.removeAttribute(PROCESSED_ATTR);
       if (a.hasAttribute(HIDDEN_ATTR)) unhideArticle(a);

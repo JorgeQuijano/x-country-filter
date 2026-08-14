@@ -4,8 +4,42 @@
 const DEFAULTS = {
   enabled: true,
   countries: ["IN"],            // ISO 3166-1 alpha-2 codes to hide
+  regions: [],                  // region tokens to hide (e.g. "SOUTH_ASIA")
   hideFollowing: true,          // hide even if we follow the author
   debug: true,                  // keep a local debug log (for tuning)
+};
+
+// Regions X may report in "Account based in" when it can't narrow to a country.
+// Tokens are uppercase-with-underscores (NOT ISO codes, no collision with
+// e.g. SA = Saudi Arabia).
+const REGION_NAMES = {
+  "south asia": "SOUTH_ASIA",
+  "southeast asia": "SOUTHEAST_ASIA",
+  "east asia": "EAST_ASIA",
+  "central asia": "CENTRAL_ASIA",
+  "middle east": "MIDDLE_EAST",
+  "latin america": "LATIN_AMERICA",
+  "caribbean": "CARIBBEAN",
+  "sub-saharan africa": "SUB_SAHARAN_AFRICA",
+  "sub saharan africa": "SUB_SAHARAN_AFRICA",
+  "europe": "EUROPE",
+  "north america": "NORTH_AMERICA",
+  "oceania": "OCEANIA",
+};
+
+// Members per region (for display/debug only — hiding is by exact token).
+const REGION_MEMBERS = {
+  "SOUTH_ASIA": ["IN", "PK", "BD", "NP", "BT", "LK", "MV", "AF"],
+  "SOUTHEAST_ASIA": ["ID", "PH", "VN", "TH", "MY", "SG", "LA", "KH", "MM", "BN", "TL"],
+  "EAST_ASIA": ["CN", "HK", "TW", "JP", "KR", "KP", "MN"],
+  "CENTRAL_ASIA": ["KZ", "UZ", "KG", "TJ", "TM"],
+  "MIDDLE_EAST": ["SA", "AE", "QA", "KW", "BH", "OM", "YE", "JO", "LB", "SY", "IQ", "IR", "IL", "PS"],
+  "LATIN_AMERICA": ["MX", "BR", "AR", "CO", "CL", "PE", "VE", "EC", "BO", "PY", "UY", "GT", "HN", "NI", "CR", "PA", "SV", "CU", "DO", "PR"],
+  "CARIBBEAN": ["CU", "DO", "HT", "JM", "TT", "PR", "BS", "BB"],
+  "SUB_SAHARAN_AFRICA": ["NG", "ZA", "KE", "ET", "GH", "TZ", "UG", "CD", "CM", "CI", "SN", "AO", "MZ", "ZW", "ZM", "RW", "BW", "NA", "MW", "ML", "NE", "TD", "BF", "GN", "BJ", "TG", "SL", "LR", "MU", "MG", "DJ", "ER", "CF", "GA", "GQ", "CG", "SO"],
+  "EUROPE": ["GB", "IE", "FR", "DE", "ES", "PT", "IT", "NL", "BE", "CH", "AT", "SE", "NO", "DK", "FI", "IS", "GR", "RO", "BG", "HU", "CZ", "SK", "SI", "HR", "RS", "BA", "AL", "MK", "ME", "EE", "LV", "LT", "MD", "LU", "MT", "CY", "MC", "AD", "SM", "UA", "BY", "PL"],
+  "NORTH_AMERICA": ["US", "CA", "MX"],
+  "OCEANIA": ["AU", "NZ", "FJ", "PG", "WS"],
 };
 
 const COUNTRY_NAMES = {
@@ -151,7 +185,14 @@ function guessCountryFromText(text) {
   if (!text) return null;
   const t = " " + text.toLowerCase() + " ";
 
-  // exact country-name match first
+  // region match first (e.g. "based in South Asia")
+  for (const [name, token] of Object.entries(REGION_NAMES)) {
+    if (t.includes(" " + name + " ") || t.includes(name + ",") || t.startsWith(name + " ") || t.trim() === name) {
+      return token;
+    }
+  }
+
+  // exact country-name match second
   for (const [name, code] of Object.entries(COUNTRY_NAMES)) {
     if (t.includes(" " + name + " ") || t.includes(name + ",") || t.startsWith(name)) {
       return code;

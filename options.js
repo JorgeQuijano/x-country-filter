@@ -2,28 +2,33 @@
 const $ = (id) => document.getElementById(id);
 
 async function load() {
-  const opts = await chrome.storage.sync.get(["enabled", "countries", "hideFollowing"]);
+  const opts = await chrome.storage.sync.get(["enabled", "countries", "regions", "hideFollowing"]);
   $("enabled").checked = opts.enabled !== false;
   $("hideFollowing").checked = opts.hideFollowing !== false;
-  renderChips(opts.countries && opts.countries.length ? opts.countries : ["IN"]);
+  renderChips(opts.countries && opts.countries.length ? opts.countries : ["IN"], opts.regions || []);
 }
 
-function renderChips(countries) {
+function renderChips(countries, regions) {
   const wrap = $("chips");
   wrap.innerHTML = "";
-  for (const c of countries) {
+  const all = [];
+  for (const c of countries) all.push({ code: c, kind: "country" });
+  for (const r of regions) all.push({ code: r, kind: "region" });
+  for (const item of all) {
     const chip = document.createElement("span");
     chip.className = "chip";
-    chip.textContent = c;
+    chip.title = item.kind === "region" ? "region" : "country";
+    chip.textContent = item.code;
     const rm = document.createElement("button");
     rm.textContent = "x";
-    rm.title = `remove ${c}`;
+    rm.title = `remove ${item.code}`;
     rm.addEventListener("click", async () => {
-      const cur = (await chrome.storage.sync.get("countries")).countries || ["IN"];
-      const next = cur.filter((x) => x !== c);
-      await chrome.storage.sync.set({ countries: next });
-      renderChips(next);
-      setStatus("removed " + c);
+      const cur = (await chrome.storage.sync.get(["countries", "regions"]));
+      const countries = (cur.countries || ["IN"]).filter((x) => x !== item.code);
+      const regions = (cur.regions || []).filter((x) => x !== item.code);
+      await chrome.storage.sync.set({ countries, regions });
+      renderChips(countries.length ? countries : ["IN"], regions);
+      setStatus("removed " + item.code);
     });
     chip.appendChild(rm);
     wrap.appendChild(chip);
@@ -48,14 +53,29 @@ $("hideFollowing").addEventListener("change", async (e) => {
 $("addBtn").addEventListener("click", async () => {
   const code = $("newCountry").value.trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(code)) { setStatus("enter a 2-letter ISO code, e.g. IN"); return; }
-  const cur = (await chrome.storage.sync.get("countries")).countries || ["IN"];
-  if (!cur.includes(code)) {
-    cur.push(code);
-    await chrome.storage.sync.set({ countries: cur });
+  const cur = (await chrome.storage.sync.get(["countries", "regions"]));
+  const countries = cur.countries || ["IN"];
+  if (!countries.includes(code)) {
+    countries.push(code);
+    await chrome.storage.sync.set({ countries });
   }
   $("newCountry").value = "";
-  renderChips(cur);
+  renderChips(countries, cur.regions || []);
   setStatus("added " + code);
+});
+
+$("addRegionBtn").addEventListener("click", async () => {
+  const region = $("regionSelect").value;
+  if (!region) { setStatus("pick a region from the dropdown"); return; }
+  const cur = (await chrome.storage.sync.get(["countries", "regions"]));
+  const regions = cur.regions || [];
+  if (!regions.includes(region)) {
+    regions.push(region);
+    await chrome.storage.sync.set({ regions });
+  }
+  $("regionSelect").value = "";
+  renderChips(cur.countries && cur.countries.length ? cur.countries : ["IN"], regions);
+  setStatus("added region " + region);
 });
 
 $("clearCache").addEventListener("click", async () => {

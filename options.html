@@ -34,7 +34,24 @@
       <input type="text" id="newCountry" placeholder="e.g. IN" maxlength="2">
       <button id="addBtn">Add</button>
     </div>
-    <small>ISO country codes (alpha-2). Default: IN (India).</small>
+    <div style="margin-top:8px">
+      <select id="regionSelect">
+        <option value="">add a region…</option>
+        <option value="SOUTH_ASIA">South Asia</option>
+        <option value="SOUTHEAST_ASIA">Southeast Asia</option>
+        <option value="EAST_ASIA">East Asia</option>
+        <option value="CENTRAL_ASIA">Central Asia</option>
+        <option value="MIDDLE_EAST">Middle East</option>
+        <option value="LATIN_AMERICA">Latin America</option>
+        <option value="CARIBBEAN">Caribbean</option>
+        <option value="SUB_SAHARAN_AFRICA">Sub-Saharan Africa</option>
+        <option value="EUROPE">Europe</option>
+        <option value="NORTH_AMERICA">North America</option>
+        <option value="OCEANIA">Oceania</option>
+      </select>
+      <button id="addRegionBtn" class="secondary">Add region</button>
+    </div>
+    <small>ISO country codes (alpha-2) and/or regions. Default: IN (India).</small>
   </section>
 
   <section>
